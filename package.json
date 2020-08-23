@@ -1,0 +1,23 @@
+{
+  "name": "collision-detection",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Erik Watson",
+  "license": "MIT",
+  "dependencies": {
+    "@erikwatson/bramble": "file:../Bramble",
+    "babel-loader": "^8.0.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0",
+    "webpack-merge": "^4.2.2"
+  },
+  "scripts": {
+    "build": "yarn webpack --config webpack.prod.js",
+    "watch": "yarn build --watch",
+    "serve": "yarn webpack-dev-server --open --config webpack.dev.js"
+  }
+}
