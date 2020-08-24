@@ -3,8 +3,8 @@ const { game, graphics, keyboard, mouse, vec2 } = require('@erikwatson/bramble')
 const container = document.querySelector('.bramble-view')
 
 const gameProps = {
-  width: 800,
-  height: 800
+  width: 1280,
+  height: 720
 }
 
 // works
@@ -166,7 +166,7 @@ function dynamicRectVsStaticRect (dynamicRect, staticRect) {
 game.attachTo(container)
 
 const player = {
-  position: vec2.create(100, 400),
+  position: vec2.create(104, 100),
   velocity: vec2.create(0, 0),
   width: 50,
   height: 50,
@@ -181,16 +181,40 @@ const walls = [
     },
     width: 600,
     height: 10
+  },
+  {
+    position: {
+      x: 100,
+      y: 500 - 100
+    },
+    width: 4,
+    height: 100
+  },
+  {
+    position: {
+      x: 154,
+      y: 500 - 100
+    },
+    width: 4,
+    height: 100
+  },
+  {
+    position: {
+      x: 100,
+      y: 500
+    },
+    width: 600,
+    height: 10
   }
 ]
 
 for (let i = 0; i < 50; i++) {
   walls.push({
     position: {
-      x: i * 75,
-      y: 750
+      x: i * 32,
+      y: gameProps.height - 32
     },
-    width: 75,
+    width: 32,
     height: 32
   })
 }
