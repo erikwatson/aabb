@@ -170,7 +170,8 @@ const player = {
   velocity: vec2.create(0, 0),
   width: 32,
   height: 50,
-  maxSpeed: 8
+  maxSpeed: 10,
+  inAir: false
 }
 
 // const walls = [
@@ -228,7 +229,7 @@ for (let y = 0; y < 7; y++) {
 }
 
 const world = {
-  gravity: vec2.create(0, 15)
+  gravity: vec2.create(0, 4)
 }
 
 const debug = {
@@ -250,8 +251,11 @@ game.setUpdate(() => {
     player.velocity.x = 0
   }
 
-  if (keyboard.space.pressed) {
-    player.velocity.y -= 20
+  if (player.inAir === false) {
+    if (keyboard.space.pressed) {
+      player.velocity.y -= 32
+      player.inAir = true
+    }
   }
 
   debug.highlights = []
@@ -264,6 +268,7 @@ game.setUpdate(() => {
   const selectedWalls = walls
     .filter(wall => wall)
     .filter(wall => dynamicRectVsStaticRect(player, wall) !== false)
+
   const sortedSelections = selectedWalls
     .sort((a, b) => {
       const aCenter = vec2.create(
@@ -286,11 +291,13 @@ game.setUpdate(() => {
     debug.highlights.push(wall)
   })
 
+  let collided = false
+
   walls.forEach(wall => {
     const result = dynamicRectVsStaticRect(player, wall)
 
     if (result) {
-      const toAdd = result.normal
+      const toAdd = vec2.clone(result.normal)
 
       toAdd.multiply(vec2.create(
         Math.abs(player.velocity.x),
@@ -300,8 +307,17 @@ game.setUpdate(() => {
       toAdd.multiplyScalar(1 - (result.timeOfCollision))
 
       player.velocity.add(toAdd)
+
+      if (result.normal.y === -1 && result.normal.x === 0) {
+        collided = true
+      }
     }
   })
+
+  if (collided) {
+    player.inAir = false
+    console.log('inAir')
+  }
 
   player.position.add(player.velocity)
 })
