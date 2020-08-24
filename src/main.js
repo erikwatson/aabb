@@ -212,7 +212,7 @@ const walls = []
 const tileSize = 32
 
 for (let y = 0; y < 7; y++) {
-  for (let x = 0; x < 30; x ++) {
+  for (let x = 0; x < 40; x ++) {
 
     if (Math.random() > 0.45) {
       walls.push({
