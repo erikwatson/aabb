@@ -50,12 +50,12 @@ function lineVsRect (line, rect) {
   }
 
   if (isNaN(timeNear.x) || isNaN(timeNear.y)) {
-    console.log('timeNear is NaN', timeNear.x, timeNear.y)
+    // console.log('timeNear is NaN', timeNear.x, timeNear.y)
     return false
   }
 
   if (isNaN(timeFar.x) || isNaN(timeFar.y)) {
-    console.log('timeFar is NaN', timeFar.x, timeFar.y)
+    // console.log('timeFar is NaN', timeFar.x, timeFar.y)
     return false
   }
 
@@ -175,25 +175,37 @@ const player = {
 
 const walls = [
   {
-    position: vec2.create(400 - 50, 100),
-    width: 100,
-    height: 600
-  },
-
-  {
-    position: vec2.create(100, 350),
+    position: {
+      x: 100,
+      y: 500
+    },
     width: 600,
-    height: 100
-  },
-
-  {
-    position: vec2.create(200, 200),
-    width: 100,
-    height: 300
+    height: 10
   }
 ]
 
+for (let i = 0; i < 50; i++) {
+  walls.push({
+    position: {
+      x: i * 75,
+      y: 750
+    },
+    width: 75,
+    height: 32
+  })
+}
+
+const world = {
+  gravity: vec2.create(0, 15)
+}
+
+const debug = {
+  highlights: []
+}
+
 game.setUpdate(() => {
+  player.velocity.add(world.gravity)
+
   if (keyboard.left.pressed) {
     player.velocity.x = -player.maxSpeed
   }
@@ -206,17 +218,11 @@ game.setUpdate(() => {
     player.velocity.x = 0
   }
 
-  if (keyboard.up.pressed) {
-    player.velocity.y = -player.maxSpeed
+  if (keyboard.space.pressed) {
+    player.velocity.y -= 20
   }
 
-  if (keyboard.down.pressed) {
-    player.velocity.y = player.maxSpeed
-  }
-
-  if (!keyboard.down.pressed && !keyboard.up.pressed) {
-    player.velocity.y = 0
-  }
+  debug.highlights = []
 
   walls.forEach(wall => {
     const result = dynamicRectVsStaticRect(player, wall)
@@ -232,6 +238,9 @@ game.setUpdate(() => {
       toAdd.multiplyScalar(1 - (result.timeOfCollision))
 
       player.velocity.add(toAdd)
+
+      // highlight this tile
+      debug.highlights.push(wall)
     }
   })
 
@@ -248,6 +257,21 @@ game.setRender(() => {
       wall.width,
       wall.height
     )
+  })
+
+  debug.highlights.forEach(wall => {
+    // console.log('wall', wall)
+
+    graphics.rect(wall.position.x, wall.position.y, wall.width, wall.height, {
+      fill: {
+        color: 'red',
+        opacity: 1
+      },
+      line: {
+        width: 2,
+        color: 'black'
+      }
+    })
   })
 
   graphics.rect(
