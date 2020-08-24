@@ -168,55 +168,63 @@ game.attachTo(container)
 const player = {
   position: vec2.create(104, 100),
   velocity: vec2.create(0, 0),
-  width: 50,
+  width: 32,
   height: 50,
   maxSpeed: 8
 }
 
-const walls = [
-  {
-    position: {
-      x: 100,
-      y: 500
-    },
-    width: 600,
-    height: 10
-  },
-  {
-    position: {
-      x: 100,
-      y: 500 - 100
-    },
-    width: 4,
-    height: 100
-  },
-  {
-    position: {
-      x: 154,
-      y: 500 - 100
-    },
-    width: 4,
-    height: 100
-  },
-  {
-    position: {
-      x: 100,
-      y: 500
-    },
-    width: 600,
-    height: 10
-  }
-]
+// const walls = [
+  // {
+  //   position: {
+  //     x: 100,
+  //     y: 500
+  //   },
+  //   width: 600,
+  //   height: 10
+  // },
+  // {
+  //   position: {
+  //     x: 100,
+  //     y: 500 - 100
+  //   },
+  //   width: 4,
+  //   height: 100
+  // },
+  // {
+  //   position: {
+  //     x: 154,
+  //     y: 500 - 100
+  //   },
+  //   width: 4,
+  //   height: 100
+  // },
+  // {
+  //   position: {
+  //     x: 100,
+  //     y: 500
+  //   },
+  //   width: 600,
+  //   height: 10
+  // }
+// ]
 
-for (let i = 0; i < 50; i++) {
-  walls.push({
-    position: {
-      x: i * 32,
-      y: gameProps.height - 32
-    },
-    width: 32,
-    height: 32
-  })
+const walls = []
+const tileSize = 32
+
+for (let y = 0; y < 7; y++) {
+  for (let x = 0; x < 30; x ++) {
+
+    if (Math.random() > 0.45) {
+      walls.push({
+        position: {
+          x: x * tileSize,
+          y: 500 + y * tileSize
+        },
+        width: tileSize,
+        height: tileSize
+      })
+    }
+  }
 }
 
 const world = {
@@ -224,7 +232,7 @@ const world = {
 }
 
 const debug = {
-  highlights: []
+  highlights: [],
 }
 
 game.setUpdate(() => {
@@ -248,6 +256,36 @@ game.setUpdate(() => {
 
   debug.highlights = []
 
+  const playerCenter = vec2.create(
+    player.position.x + (player.width / 2),
+    player.position.y + (player.height / 2)
+  )
+
+  const selectedWalls = walls
+    .filter(wall => wall)
+    .filter(wall => dynamicRectVsStaticRect(player, wall) !== false)
+  const sortedSelections = selectedWalls
+    .sort((a, b) => {
+      const aCenter = vec2.create(
+        a.position.x + (a.width / 2),
+        a.position.y + (a.height / 2)
+      )
+
+      const bCenter = vec2.create(
+        b.position.x + (b.width / 2),
+        b.position.y + (b.height / 2)
+      )
+
+      aCenter.subtract(playerCenter)
+      bCenter.subtract(playerCenter)
+
+      return a.length > b.length
+    })
+
+  sortedSelections.forEach(wall => {
+    debug.highlights.push(wall)
+  })
+
   walls.forEach(wall => {
     const result = dynamicRectVsStaticRect(player, wall)
 
@@ -262,9 +300,6 @@ game.setUpdate(() => {
       toAdd.multiplyScalar(1 - (result.timeOfCollision))
 
       player.velocity.add(toAdd)
-
-      // highlight this tile
-      debug.highlights.push(wall)
     }
   })
 
@@ -283,12 +318,12 @@ game.setRender(() => {
     )
   })
 
-  debug.highlights.forEach(wall => {
-    // console.log('wall', wall)
+  debug.highlights.forEach((wall, i) => {
+    const color = (i === 1) ? 'green' : 'red'
 
     graphics.rect(wall.position.x, wall.position.y, wall.width, wall.height, {
       fill: {
-        color: 'red',
+        color,
         opacity: 1
       },
       line: {
@@ -302,7 +337,17 @@ game.setRender(() => {
     player.position.x,
     player.position.y,
     player.width,
-    player.height
+    player.height,
+    {
+      fill: {
+        color: 'aqua',
+        opacity: 1
+      },
+      line: {
+        width: 2,
+        color: 'black'
+      }
+    }
   )
 })
 
