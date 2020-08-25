@@ -4,7 +4,8 @@ const container = document.querySelector('.bramble-view')
 
 const gameProps = {
   width: 1280,
-  height: 720
+  height: 720,
+  debug: true
 }
 
 // works
@@ -166,7 +167,7 @@ function dynamicRectVsStaticRect (dynamicRect, staticRect) {
 game.attachTo(container)
 
 const player = {
-  position: vec2.create(104, 100),
+  position: vec2.create(104, 200),
   velocity: vec2.create(0, 0),
   width: 32,
   height: 50,
@@ -174,52 +175,49 @@ const player = {
   inAir: false
 }
 
-// const walls = [
-  // {
-  //   position: {
-  //     x: 100,
-  //     y: 500
-  //   },
-  //   width: 600,
-  //   height: 10
-  // },
-  // {
-  //   position: {
-  //     x: 100,
-  //     y: 500 - 100
-  //   },
-  //   width: 4,
-  //   height: 100
-  // },
-  // {
-  //   position: {
-  //     x: 154,
-  //     y: 500 - 100
-  //   },
-  //   width: 4,
-  //   height: 100
-  // },
-  // {
-  //   position: {
-  //     x: 100,
-  //     y: 500
-  //   },
-  //   width: 600,
-  //   height: 10
-  // }
-// ]
-
 const walls = []
 const tileSize = 32
 
-for (let y = 0; y < 7; y++) {
+for (let y = 0; y < 10; y++) {
   for (let x = 0; x < 40; x ++) {
 
-    if (Math.random() > 0.45) {
+    if (Math.random() > 0.95) {
       walls.push({
         position: {
           x: x * tileSize,
-          y: 500 + y * tileSize
+          y: y * tileSize
+        },
+        width: tileSize,
+        height: tileSize
+      })
+    }
+  }
+}
+
+for (let y = 10; y < 20; y++) {
+  for (let x = 0; x < 40; x ++) {
+
+    if (Math.random() > 0.4) {
+      walls.push({
+        position: {
+          x: x * tileSize,
+          y: y * tileSize
+        },
+        width: tileSize,
+        height: tileSize
+      })
+    }
+  }
+}
+
+for (let y = 20; y < 25; y++) {
+  for (let x = 0; x < 40; x ++) {
+
+    if (Math.random() > 0) {
+      walls.push({
+        position: {
+          x: x * tileSize,
+          y: y * tileSize,
         },
         width: tileSize,
         height: tileSize
@@ -258,65 +256,50 @@ game.setUpdate(() => {
     }
   }
 
-  debug.highlights = []
+  if (gameProps.debug) {
+    debug.highlights = []
+  }
 
-  const playerCenter = vec2.create(
-    player.position.x + (player.width / 2),
-    player.position.y + (player.height / 2)
-  )
-
-  const selectedWalls = walls
-    .filter(wall => wall)
-    .filter(wall => dynamicRectVsStaticRect(player, wall) !== false)
-
-  const sortedSelections = selectedWalls
-    .sort((a, b) => {
-      const aCenter = vec2.create(
-        a.position.x + (a.width / 2),
-        a.position.y + (a.height / 2)
-      )
-
-      const bCenter = vec2.create(
-        b.position.x + (b.width / 2),
-        b.position.y + (b.height / 2)
-      )
-
-      aCenter.subtract(playerCenter)
-      bCenter.subtract(playerCenter)
-
-      return a.length > b.length
+  const collisionCandidates = walls
+    .filter(wall => wall) // just do it on all of them for now
+    .map(wall => {
+      return {
+        wall,
+        collision: dynamicRectVsStaticRect(player, wall)
+      }
     })
+    .filter(result => result.collision !== false)
+    .sort((a, b) => a.collision.timeOfCollision <= b.collision.timeOfCollision)
 
-  sortedSelections.forEach(wall => {
-    debug.highlights.push(wall)
-  })
+  if (gameProps.debug) {
+    collisionCandidates.forEach(({ wall, collision }) => {
+      debug.highlights.push(wall)
+    })
+  }
 
   let collided = false
 
-  walls.forEach(wall => {
-    const result = dynamicRectVsStaticRect(player, wall)
+  collisionCandidates.forEach(({ wall, collision }) => {
+    const toAdd = vec2.clone(collision.normal)
 
-    if (result) {
-      const toAdd = vec2.clone(result.normal)
+    toAdd.multiply(vec2.create(
+      Math.abs(player.velocity.x),
+      Math.abs(player.velocity.y)
+    ))
 
-      toAdd.multiply(vec2.create(
-        Math.abs(player.velocity.x),
-        Math.abs(player.velocity.y)
-      ))
+    toAdd.multiplyScalar(1 - (collision.timeOfCollision))
 
-      toAdd.multiplyScalar(1 - (result.timeOfCollision))
+    player.velocity.add(toAdd)
 
-      player.velocity.add(toAdd)
-
-      if (result.normal.y === -1 && result.normal.x === 0) {
-        collided = true
-      }
+    if (collision.normal.y === -1 && collision.normal.x === 0) {
+      collided = true
     }
   })
 
   if (collided) {
     player.inAir = false
-    console.log('inAir')
+  } else {
+    player.inAir = true
   }
 
   player.position.add(player.velocity)
@@ -334,20 +317,29 @@ game.setRender(() => {
     )
   })
 
-  debug.highlights.forEach((wall, i) => {
-    const color = (i === 1) ? 'green' : 'red'
+  if (gameProps.debug) {
+    debug.highlights.forEach((wall, i) => {
+      const color = (i === 0) ? 'green' : 'red'
 
-    graphics.rect(wall.position.x, wall.position.y, wall.width, wall.height, {
-      fill: {
-        color,
-        opacity: 1
-      },
-      line: {
-        width: 2,
-        color: 'black'
+      graphics.rect(
+        wall.position.x,
+        wall.position.y,
+        wall.width,
+        wall.height,
+        {
+          fill: {
+            color,
+            opacity: 1
+          },
+          line: {
+            width: 2,
+            color: 'black'
+          }
+        })
       }
-    })
-  })
+    )
+  }
+
 
   graphics.rect(
     player.position.x,
