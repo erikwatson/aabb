@@ -172,13 +172,14 @@ const player = {
   width: 32,
   height: 50,
   maxSpeed: 10,
-  inAir: false
+  inAir: false,
+  againstWall: false
 }
 
 const walls = []
 const tileSize = 32
 
-for (let y = 0; y < 10; y++) {
+for (let y = 0; y < 16; y++) {
   for (let x = 0; x < 40; x ++) {
 
     if (Math.random() > 0.95) {
@@ -194,7 +195,7 @@ for (let y = 0; y < 10; y++) {
   }
 }
 
-for (let y = 10; y < 20; y++) {
+for (let y = 16; y < 20; y++) {
   for (let x = 0; x < 40; x ++) {
 
     if (Math.random() > 0.4) {
@@ -227,7 +228,7 @@ for (let y = 20; y < 25; y++) {
 }
 
 const world = {
-  gravity: vec2.create(0, 4)
+  gravity: vec2.create(0, 3)
 }
 
 const debug = {
@@ -269,7 +270,7 @@ game.setUpdate(() => {
       }
     })
     .filter(result => result.collision !== false)
-    .sort((a, b) => a.collision.timeOfCollision <= b.collision.timeOfCollision)
+    .sort((a, b) => a.collision.timeOfCollision < b.collision.timeOfCollision)
 
   if (gameProps.debug) {
     collisionCandidates.forEach(({ wall, collision }) => {
@@ -278,20 +279,28 @@ game.setUpdate(() => {
   }
 
   let collided = false
+  let againstWall = false
 
   collisionCandidates.forEach(({ wall, collision }) => {
-    const toAdd = vec2.clone(collision.normal)
+    // console.log(player, wall)
+    const collisionClone = dynamicRectVsStaticRect(player, wall)
+
+    if (collisionClone === false) {
+      return
+    }
+
+    const toAdd = vec2.clone(collisionClone.normal)
 
     toAdd.multiply(vec2.create(
       Math.abs(player.velocity.x),
       Math.abs(player.velocity.y)
     ))
 
-    toAdd.multiplyScalar(1 - (collision.timeOfCollision))
+    toAdd.multiplyScalar(1 - (collisionClone.timeOfCollision))
 
     player.velocity.add(toAdd)
 
-    if (collision.normal.y === -1 && collision.normal.x === 0) {
+    if (collision.normal.y === -1 && collisionClone.normal.x === 0) {
       collided = true
     }
   })
