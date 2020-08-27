@@ -119,6 +119,25 @@ function lineVsRect (line, rect) {
       normal.x = 0
       normal.y = -1
     }
+  } else if (timeNear.x === timeNear.y) {
+    // console.log(invdir.x, invdir.y)
+    if (invdir.x < 0 && invdir.y < 0) {
+      console.log('tl')
+      normal.x = -1
+      normal.y = 1
+    } else if (invdir.x > 0 && invdir.y < 0) {
+      console.log('tr')
+      normal.x = 1
+      normal.y = 1
+    } else if (invdir.x < 0 && invdir.y > 0) {
+      console.log('bl')
+      normal.x = -1
+      normal.y = -1
+    } else if (invdir.x > 0 && invdir.y > 0) {
+      console.log('br')
+      normal.x = 1
+      normal.y = -1
+    }
   }
 
   // collided with the object!
@@ -191,8 +210,30 @@ const player = {
 const walls = []
 const tileSize = 32
 
-for (let y = 0; y < 16; y++) {
-  for (let x = 0; x < 40; x ++) {
+const widthInTiles = Math.round(gameProps.width / tileSize)
+const heightInTiles = Math.round(gameProps.height / tileSize)
+
+const third = Math.round(heightInTiles / 3)
+const quarter = Math.round(heightInTiles / 4)
+
+for (let y = 0; y < quarter; y++) {
+  for (let x = 0; x < widthInTiles; x ++) {
+
+    if (Math.random() > 0.99) {
+      walls.push({
+        position: {
+          x: x * tileSize,
+          y: y * tileSize
+        },
+        width: tileSize,
+        height: tileSize
+      })
+    }
+  }
+}
+
+for (let y = quarter; y < quarter * 2; y++) {
+  for (let x = 0; x < widthInTiles; x ++) {
 
     if (Math.random() > 0.95) {
       walls.push({
@@ -207,14 +248,14 @@ for (let y = 0; y < 16; y++) {
   }
 }
 
-for (let y = 16; y < 20; y++) {
-  for (let x = 0; x < 40; x ++) {
+for (let y = quarter * 2; y < quarter * 3; y++) {
+  for (let x = 0; x < widthInTiles; x ++) {
 
-    if (Math.random() > 0.4) {
+    if (Math.random() > 0.9) {
       walls.push({
         position: {
           x: x * tileSize,
-          y: y * tileSize
+          y: y * tileSize,
         },
         width: tileSize,
         height: tileSize
@@ -223,10 +264,10 @@ for (let y = 16; y < 20; y++) {
   }
 }
 
-for (let y = 20; y < 25; y++) {
-  for (let x = 0; x < 40; x ++) {
+for (let y = quarter * 3; y < quarter * 4; y++) {
+  for (let x = 0; x < widthInTiles; x ++) {
 
-    if (Math.random() > 0) {
+    if (Math.random() > 0.1) {
       walls.push({
         position: {
           x: x * tileSize,
@@ -293,8 +334,6 @@ game.setUpdate(() => {
     const collisionCandidates = sortBy(collisionCandidatesUnsorted, o => {
       o.timeOfCollision
     })
-
-  // const collisionCandidates = sortBy(collisionCandidatesUnsorted, (a, b) => a.collision.timeOfCollision < b.collision.timeOfCollision)
 
   if (gameProps.debug) {
     collisionCandidates.forEach(({ wall, collision }) => {
