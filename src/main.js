@@ -1,11 +1,11 @@
 const { game, graphics, keyboard, mouse, vec2 } = require('@erikwatson/bramble')
+const sortBy = require('lodash.sortby')
 
 const container = document.querySelector('.bramble-view')
 
-const gameProps = {
-  width: 1280,
-  height: 720,
-  debug: true
+const debug = {
+  highlights: [],
+  expandedBounds: []
 }
 
 // works
@@ -145,19 +145,31 @@ function dynamicRectVsStaticRect (dynamicRect, staticRect) {
     return false
   }
 
+  const halfWidth = dynamicRect.width / 2
+  const halfHeight = dynamicRect.height / 2
+
   const clone = vec2.clone(dynamicRect.position)
   clone.add(dynamicRect.velocity)
+  clone.x += dynamicRect.width / 2
+  clone.y += dynamicRect.height / 2
 
   const line = {
-    from: dynamicRect.position,
+    from: {
+      x: dynamicRect.position.x + halfWidth,
+      y: dynamicRect.position.y + halfHeight
+    },
     to: clone
   }
 
   const rect = {
-    x: staticRect.position.x - dynamicRect.width,
-    y: staticRect.position.y - dynamicRect.height,
+    x: staticRect.position.x - halfWidth,
+    y: staticRect.position.y - halfHeight,
     width: staticRect.width + dynamicRect.width,
     height: staticRect.height + dynamicRect.height
+  }
+
+  if (gameProps.debug) {
+    debug.expandedBounds.push(rect)
   }
 
   const result = lineVsRect(line, rect)
@@ -171,7 +183,7 @@ const player = {
   velocity: vec2.create(0, 0),
   width: 32,
   height: 50,
-  maxSpeed: 10,
+  maxSpeed: 8,
   inAir: false,
   againstWall: false
 }
@@ -231,9 +243,7 @@ const world = {
   gravity: vec2.create(0, 3)
 }
 
-const debug = {
-  highlights: [],
-}
+
 
 game.setUpdate(() => {
   player.velocity.add(world.gravity)
@@ -259,9 +269,18 @@ game.setUpdate(() => {
 
   if (gameProps.debug) {
     debug.highlights = []
+    debug.expandedBounds = []
   }
 
-  const collisionCandidates = walls
+  debug.projection = {
+    position: vec2.clone(player.position),
+    width: player.width,
+    height: player.height
+  }
+
+  debug.projection.position.add(player.velocity)
+
+  const collisionCandidatesUnsorted = walls
     .filter(wall => wall) // just do it on all of them for now
     .map(wall => {
       return {
@@ -270,7 +289,12 @@ game.setUpdate(() => {
       }
     })
     .filter(result => result.collision !== false)
-    .sort((a, b) => a.collision.timeOfCollision < b.collision.timeOfCollision)
+
+    const collisionCandidates = sortBy(collisionCandidatesUnsorted, o => {
+      o.timeOfCollision
+    })
+
+  // const collisionCandidates = sortBy(collisionCandidatesUnsorted, (a, b) => a.collision.timeOfCollision < b.collision.timeOfCollision)
 
   if (gameProps.debug) {
     collisionCandidates.forEach(({ wall, collision }) => {
@@ -282,7 +306,6 @@ game.setUpdate(() => {
   let againstWall = false
 
   collisionCandidates.forEach(({ wall, collision }) => {
-    // console.log(player, wall)
     const collisionClone = dynamicRectVsStaticRect(player, wall)
 
     if (collisionClone === false) {
@@ -366,8 +389,43 @@ game.setRender(() => {
       }
     }
   )
+
+  if (gameProps.debug) {
+    graphics.rect(
+      debug.projection.position.x,
+      debug.projection.position.y,
+      debug.projection.width,
+      debug.projection.height,
+      {
+        line: {
+          width: 2,
+          color: 'yellow'
+        }
+      }
+    )
+
+    debug.expandedBounds.forEach(rect => {
+      graphics.rect(
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        {
+          line: {
+            width: 2,
+            color: 'purple'
+          }
+        }
+      )
+    })
+  }
 })
 
 game.setSize(gameProps.width, gameProps.height)
 game.setSmoothing(false)
 game.start()
+
+const debugCheckbox = document.querySelector('#debug')
+debugCheckbox.addEventListener('change', e => {
+  gameProps.debug = !gameProps.debug
+})
